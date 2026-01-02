@@ -1,3 +1,4 @@
+mod mbcrc;
 mod mbdef;
 mod mbfn_coils;
 mod mbfn_regs;
@@ -15,6 +16,23 @@ fn print_buf(buf: &[u8]) {
 }
 
 fn main() {
+    println!("CRC lookup table");
+    mbcrc::print_crc_table();
+
+    println!();
+    println!("-------------------");
+    println!();
+
+    println!(
+        "CRC test Expected<0x{:04X}> Actual<0x{:04X}>",
+        0x2590,
+        mbcrc::crc16(&[0x12, 0x34, 0x56, 0x78, 0x09])
+    );
+
+    println!();
+    println!("-------------------");
+    println!();
+
     let req = [
         0x04, // Functino code (Read input registers)
         0x00, 0x00, // Start address
