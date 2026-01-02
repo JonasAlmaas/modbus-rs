@@ -1,4 +1,6 @@
 mod mbdef;
+mod mbfn_coils;
+mod mbfn_regs;
 mod mbpdu;
 
 fn print_buf(buf: &[u8]) {
