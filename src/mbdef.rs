@@ -21,7 +21,7 @@ pub enum StatusCode {
 
 /**
  * Modbus error flag
- * Added onto the functino code for error responses
+ * Added onto the function code for error responses
  */
 pub const ERR_FLAG: u8 = 0x8;
 

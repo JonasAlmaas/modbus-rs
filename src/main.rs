@@ -17,7 +17,7 @@ fn print_buf(buf: &[u8]) {
 
 fn main() {
     println!("CRC lookup table");
-    mbcrc::print_crc_table();
+    mbcrc::print_lookup();
 
     println!();
     println!("-------------------");
@@ -34,7 +34,7 @@ fn main() {
     println!();
 
     let req = [
-        0x04, // Functino code (Read input registers)
+        0x04, // Function code (Read input registers)
         0x00, 0x00, // Start address
         0x00, 0x02, // Quantity of registers to read
     ];
