@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 #[repr(u8)]
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum StatusCode {
     Ok = 0x00,
     IllegalFc = 0x01, // Function code received in the query is not recognized or allowed.
@@ -23,10 +23,10 @@ pub enum StatusCode {
  * Modbus error flag
  * Added onto the function code for error responses
  */
-pub const ERR_FLAG: u8 = 0x8;
+pub const ERR_FLAG: u8 = 0x80;
 
 #[repr(u8)]
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FunctionCode {
     ReadCoils = 0x01,
     ReadDiscreteInputs = 0x02,

@@ -33,6 +33,7 @@ pub fn crc16(buf: &[u8]) -> u16 {
     })
 }
 
+#[allow(dead_code)]
 pub fn print_lookup() {
     for row_ix in 0..32 {
         for col_ix in 0..8 {

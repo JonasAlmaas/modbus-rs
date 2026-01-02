@@ -1,15 +1,15 @@
 use crate::mbdef::{self, FunctionCode, StatusCode};
-use crate::{mbfn_coils, mbfn_regs};
+use crate::{mbfn_coils, mbfn_regs, mbinst};
 
-pub const PDU_DATA_SIZE_MAX: usize = 252;
+pub(crate) const PDU_DATA_SIZE_MAX: usize = 252;
 pub const PDU_SIZE_MAX: usize = 1 + PDU_DATA_SIZE_MAX;
 
-pub struct PDUBuf<'a> {
-    pub p: &'a mut [u8],
+pub(crate) struct PDUBuf<'a> {
+    pub p: &'a mut [u8; PDU_SIZE_MAX],
     pub size: usize,
 }
 
-fn handle_fn(buf: &[u8], res: &mut PDUBuf) -> StatusCode {
+fn handle_fn(_inst: &mbinst::Instance, buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     match FunctionCode::try_from(buf[0]) {
         Ok(FunctionCode::ReadCoils) => mbfn_coils::read_multiple(buf, res),
         Ok(FunctionCode::ReadDiscreteInputs) => mbfn_coils::read_multiple(buf, res),
@@ -33,7 +33,7 @@ fn handle_fn(buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     }
 }
 
-pub fn handle_req(buf: &[u8], res: &mut [u8]) -> usize {
+pub fn handle_req(inst: &mbinst::Instance, buf: &[u8], res: &mut [u8; PDU_SIZE_MAX]) -> usize {
     let fc = match buf.get(0) {
         Some(&b) => b,
         None => return 0,
@@ -44,7 +44,7 @@ pub fn handle_req(buf: &[u8], res: &mut [u8]) -> usize {
     res.p[0] = fc;
     res.size = 1;
 
-    match handle_fn(buf, &mut res) {
+    match handle_fn(inst, buf, &mut res) {
         StatusCode::Ok => (),
         status => {
             res.p[0] |= mbdef::ERR_FLAG;
