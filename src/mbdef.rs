@@ -24,6 +24,7 @@ pub enum StatusCode {
  * Added onto the functino code for error responses
  */
 pub const ERR_FLAG: u8 = 0x8;
+
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FunctionCode {
