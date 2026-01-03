@@ -1,19 +1,15 @@
-use crate::{Instance, mbcrc, mbpdu};
+use crate::{crc, pdu, Instance};
 
-/**
- * - 1 Slave address
- * - 1 Function code (Technically not part of the ADU, but required)
- * - 2 crc
- */
+/// - 1 Slave address
+/// - 1 Function code (Technically not part of the ADU, but required)
+/// - 2 crc
 const ADU_SIZE_MIN: usize = 4;
 
-/*
- * - 1 Slave address
- * - 253 PDU
- *   - 1 Function code
- *   - 252 PDU data
- * - 2 crc
- */
+/// - 1 Slave address
+/// - 253 PDU
+///   - 1 Function code
+///   - 252 PDU data
+/// - 2 crc
 pub const ADU_SIZE_MAX: usize = 256;
 
 pub const SLAVE_ADDR_MIN: u8 = 1;
@@ -26,7 +22,7 @@ fn prep_res(slave_addr: u8, res: &mut [u8; ADU_SIZE_MAX], pdu_size: usize) -> us
     res[0] = slave_addr;
     let res_size = 1 + pdu_size;
 
-    let crc = mbcrc::crc16(&res[..res_size]);
+    let crc = crc::crc16(&res[..res_size]);
     let crc = crc.to_le_bytes();
     res[res_size] = crc[0];
     res[res_size + 1] = crc[1];
@@ -34,13 +30,13 @@ fn prep_res(slave_addr: u8, res: &mut [u8; ADU_SIZE_MAX], pdu_size: usize) -> us
     res_size + 2
 }
 
-pub fn handle_req(inst: &Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> usize {
+pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> usize {
     if !inst.serial.is_some() || buf.len() < ADU_SIZE_MIN {
         return 0;
     }
 
     let recv_crc = u16::from_le_bytes(buf[(buf.len() - 2)..].try_into().unwrap());
-    if recv_crc != mbcrc::crc16(&buf[..buf.len() - 2]) {
+    if recv_crc != crc::crc16(&buf[..buf.len() - 2]) {
         return 0;
     }
 
@@ -54,10 +50,10 @@ pub fn handle_req(inst: &Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> 
         return 0;
     }
 
-    let pdu_size = mbpdu::handle_req(
+    let pdu_size = pdu::handle_req(
         inst,
         &buf[1..buf.len() - 2],
-        (&mut res[1..1 + mbpdu::PDU_SIZE_MAX]).try_into().unwrap(),
+        (&mut res[1..1 + pdu::PDU_SIZE_MAX]).try_into().unwrap(),
     );
     if pdu_size == 0 || recv_slave_addr == SLAVE_ADDR_DEFAULT_RESP {
         return 0;
@@ -69,14 +65,12 @@ pub fn handle_req(inst: &Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{SerialConfig};
+    use crate::SerialConfig;
 
     #[test]
-    fn mbadu_works() {
-        let inst = Instance {
-            descriptors: None,
-            serial: Some(SerialConfig { slave_addr: 1 }),
-        };
+    fn adu_works() {
+        let mut inst: Instance = Default::default();
+        inst.serial = Some(SerialConfig { slave_addr: 1 });
 
         let mut buf = [
             0x01, // Slave addr
@@ -85,7 +79,7 @@ mod test {
             0x00, 0x01, // Quantity
             0x00, 0x00, // CRC
         ];
-        let crc = mbcrc::crc16(&buf[..buf.len() - 2]);
+        let crc = crc::crc16(&buf[..buf.len() - 2]);
         let crc = crc.to_le_bytes();
         match &mut buf {
             [.., crc_lo, crc_hi] => {

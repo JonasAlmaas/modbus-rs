@@ -4,25 +4,30 @@ use std::convert::TryFrom;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum StatusCode {
     Ok = 0x00,
-    IllegalFc = 0x01, // Function code received in the query is not recognized or allowed.
-    _IllegalDataAddr = 0x02, // Data address of some or all the required entities are not allowed or do not exist.
-    IllegalDataValue = 0x03, // Illegal data value. Value is not accepted.
-    DeviceFail = 0x04, // Unrecoverable error occurred while slave was attempting to perform requested action.
-    /* Slave has accepted request and is processing it, but a long duration of time is required.
-    This response is returned to prevent a timeout error from occurring on the master.
-    The master can next issue a Poll Program Complete message to determine whether processing is completed */
-    _Acknowlage = 0x05,
-    _Busy = 0x06, // Slave is engaged in processing a long-duration command; client should retry later
-    /* Slave cannot perform the programming functions;
-    master should request diagnostic or error information from slave */
-    _NegaticeAcknowlage = 0x07,
-    _MemoryParityError = 0x08, // Slave detected a parity error in memory; master can retry the request
+    /// Function code received in the query is not recognized or allowed.
+    IllegalFc = 0x01,
+    /// Data address of some or all the required entities are not allowed or do not exist.
+    IllegalDataAddr = 0x02,
+    /// Illegal data value. Value is not accepted.
+    IllegalDataValue = 0x03,
+    /// Unrecoverable error occurred while slave was attempting to perform requested action.
+    DeviceFail = 0x04,
+    /// Slave has accepted request and is processing it, but a long duration of time is required.
+    /// This response is returned to prevent a timeout error from occurring on the master.
+    /// The master can next issue a Poll Program Complete message to determine whether processing is completed
+    Acknowlage = 0x05,
+    /// Slave is engaged in processing a long-duration command; client should retry later
+    Busy = 0x06,
+    /// Slave cannot perform the programming functions;
+    /// master should request diagnostic or error information from slave
+    NegaticeAcknowlage = 0x07,
+    /// Slave detected a parity error in memory; master can retry the request
+    MemoryParityError = 0x08,
 }
 
-/**
- * Modbus error flag
- * Added onto the function code for error responses
- */
+/// Modbus error flag
+///
+/// Added onto the function code for error responses
 pub const ERR_FLAG: u8 = 0x80;
 
 #[repr(u8)]
@@ -34,13 +39,18 @@ pub enum FunctionCode {
     ReadInputRegs = 0x04,
     WriteSingleCoil = 0x05,
     WriteSingleReg = 0x06,
-    ReadExceptionStatus = 0x07, // Serial only
-    Diagnostics = 0x08,         // Serial only
-    CommEventCounter = 0x0B,    // Serial only
-    CommEventLog = 0x0C,        // Serial only
+    /// Serial only
+    ReadExceptionStatus = 0x07,
+    /// Serial only
+    Diagnostics = 0x08,
+    /// Serial only
+    CommEventCounter = 0x0B,
+    /// Serial only
+    CommEventLog = 0x0C,
     WriteMultipleCoils = 0x0F,
     WriteMultipleRegs = 0x10,
-    ReportSlaveId = 0x11, // Serial only
+    /// Serial only
+    ReportSlaveId = 0x11,
     ReadFileRecord = 0x14,
     WriteFileRecord = 0x15,
     MaskWriteReg = 0x16,

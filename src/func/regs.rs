@@ -1,5 +1,5 @@
-use crate::mbpdu::PDUBuf;
-use crate::mbdef::{FunctionCode, StatusCode};
+use crate::def::{FunctionCode, StatusCode};
+use crate::pdu::PDUBuf;
 
 pub fn read_multiple(buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     let [fc, addr_hi, addr_lo, q_hi, q_lo] = match <[u8; 5]>::try_from(buf) {
