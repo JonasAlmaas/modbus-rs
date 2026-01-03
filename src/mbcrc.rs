@@ -46,3 +46,15 @@ pub fn print_lookup() {
         println!();
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn mbcrc16_known_values() {
+        let buf = [0x55, 0xAA, 0x02, 0xF0];
+        let crc = crc16(&buf);
+        assert_eq!(crc, 0xEC30);
+    }
+}

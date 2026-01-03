@@ -1,4 +1,4 @@
-use crate::{mbcrc, mbinst, mbpdu};
+use crate::{Instance, mbcrc, mbpdu};
 
 /**
  * - 1 Slave address
@@ -34,7 +34,7 @@ fn prep_res(slave_addr: u8, res: &mut [u8; ADU_SIZE_MAX], pdu_size: usize) -> us
     res_size + 2
 }
 
-pub fn handle_req(inst: &mbinst::Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> usize {
+pub fn handle_req(inst: &Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> usize {
     if !inst.serial.is_some() || buf.len() < ADU_SIZE_MIN {
         return 0;
     }
@@ -64,4 +64,39 @@ pub fn handle_req(inst: &mbinst::Instance, buf: &[u8], res: &mut [u8; ADU_SIZE_M
     }
 
     prep_res(recv_slave_addr, res, pdu_size)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{SerialConfig};
+
+    #[test]
+    fn mbadu_works() {
+        let inst = Instance {
+            descriptors: None,
+            serial: Some(SerialConfig { slave_addr: 1 }),
+        };
+
+        let mut buf = [
+            0x01, // Slave addr
+            0x03, // Read holding regs
+            0x00, 0x00, // Start addr
+            0x00, 0x01, // Quantity
+            0x00, 0x00, // CRC
+        ];
+        let crc = mbcrc::crc16(&buf[..buf.len() - 2]);
+        let crc = crc.to_le_bytes();
+        match &mut buf {
+            [.., crc_lo, crc_hi] => {
+                *crc_lo = crc[0];
+                *crc_hi = crc[1];
+            }
+        }
+
+        let mut res = [0; ADU_SIZE_MAX];
+        let res_len = handle_req(&inst, &buf, &mut res);
+
+        assert_eq!(res_len, 7);
+    }
 }

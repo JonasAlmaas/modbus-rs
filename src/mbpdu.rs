@@ -1,5 +1,5 @@
 use crate::mbdef::{self, FunctionCode, StatusCode};
-use crate::{mbfn_coils, mbfn_regs, mbinst};
+use crate::{Instance, mbfn_coils, mbfn_regs};
 
 pub(crate) const PDU_DATA_SIZE_MAX: usize = 252;
 pub const PDU_SIZE_MAX: usize = 1 + PDU_DATA_SIZE_MAX;
@@ -9,7 +9,7 @@ pub(crate) struct PDUBuf<'a> {
     pub size: usize,
 }
 
-fn handle_fn(_inst: &mbinst::Instance, buf: &[u8], res: &mut PDUBuf) -> StatusCode {
+fn handle_fn(_inst: &Instance, buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     match FunctionCode::try_from(buf[0]) {
         Ok(FunctionCode::ReadCoils) => mbfn_coils::read_multiple(buf, res),
         Ok(FunctionCode::ReadDiscreteInputs) => mbfn_coils::read_multiple(buf, res),
@@ -33,7 +33,7 @@ fn handle_fn(_inst: &mbinst::Instance, buf: &[u8], res: &mut PDUBuf) -> StatusCo
     }
 }
 
-pub fn handle_req(inst: &mbinst::Instance, buf: &[u8], res: &mut [u8; PDU_SIZE_MAX]) -> usize {
+pub fn handle_req(inst: &Instance, buf: &[u8], res: &mut [u8; PDU_SIZE_MAX]) -> usize {
     let fc = match buf.get(0) {
         Some(&b) => b,
         None => return 0,
@@ -54,4 +54,25 @@ pub fn handle_req(inst: &mbinst::Instance, buf: &[u8], res: &mut [u8; PDU_SIZE_M
     };
 
     res.size
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::SerialConfig;
+
+    #[test]
+    fn mbpdu_too_little_data() {
+        let inst = Instance {
+            descriptors: None,
+            serial: Some(SerialConfig { slave_addr: 1 }),
+        };
+
+        let buf = [0x04];
+        let mut res = [0; PDU_SIZE_MAX];
+        let res_len = handle_req(&inst, &buf, &mut res);
+        assert_eq!(res_len, 2);
+        assert_eq!(res[0], 0x04 | 0x80); // Error response
+        assert_eq!(res[1], 0x03); // Illegal data value
+    }
 }
