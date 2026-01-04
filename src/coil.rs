@@ -1,5 +1,13 @@
 use std::fmt::Display;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Error {
+    ReadNotSuppported,
+    WriteNotSuppported,
+    ReadLocked,
+    WriteLocked,
+}
+
 pub enum ReadMethod<'a> {
     Value(bool),
     Ref(&'a bool),
@@ -61,14 +69,6 @@ impl<'a> Display for Descriptor<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CoilError {
-    ReadNotSuppported,
-    WriteNotSuppported,
-    ReadLocked,
-    WriteLocked,
-}
-
 /// Finds a coild by it's address
 ///
 /// This uses binary search, so all coils must be sorted in ascending order by address
@@ -80,12 +80,12 @@ pub fn find<'a>(address: u16, coils: &'a [Descriptor<'a>]) -> Option<&'a Descrip
 }
 
 impl<'a> Descriptor<'a> {
-    pub fn read(&self) -> Result<bool, CoilError> {
+    pub fn read(&self) -> Result<bool, Error> {
         // Check read permissions
         match &self.rlock {
             Some(rlock) => {
                 if rlock() {
-                    return Err(CoilError::ReadLocked);
+                    return Err(Error::ReadLocked);
                 }
             }
             None => (),
@@ -97,16 +97,16 @@ impl<'a> Descriptor<'a> {
                 ReadMethod::Ref(&r) => Ok(r),
                 ReadMethod::Fn(f) => Ok(f()),
             },
-            None => Err(CoilError::ReadNotSuppported),
+            None => Err(Error::ReadNotSuppported),
         }
     }
 
-    pub fn write(&mut self, value: bool) -> Result<(), CoilError> {
+    pub fn write(&mut self, value: bool) -> Result<(), Error> {
         // Check read permissions
         match &self.wlock {
             Some(wlock) => {
                 if wlock() {
-                    return Err(CoilError::WriteLocked);
+                    return Err(Error::WriteLocked);
                 }
             }
             None => (),
@@ -129,7 +129,7 @@ impl<'a> Descriptor<'a> {
 
                 Ok(())
             }
-            None => Err(CoilError::WriteNotSuppported),
+            None => Err(Error::WriteNotSuppported),
         }
     }
 }

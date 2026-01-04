@@ -27,6 +27,15 @@ const fn gen_lookup_table() -> [u16; 256] {
 
 const LOOKUP: [u16; 256] = gen_lookup_table();
 
+/// Generate a CRC 16 Modbus from a buffer
+///
+/// # Examples
+///
+/// ```
+/// let buf = [0x55, 0xAA, 0x02, 0xF0];
+/// let crc = mbrs::crc::crc16(&buf);
+/// assert_eq!(crc, 0xEC30);
+/// ```
 pub fn crc16(buf: &[u8]) -> u16 {
     buf.iter().fold(0xFFFF, |crc, v| {
         (crc >> 8) ^ LOOKUP[((crc ^ *v as u16) & 0xFF) as usize]
@@ -44,17 +53,5 @@ pub fn print_lookup() {
             print!("0x{:04X}", LOOKUP[ix]);
         }
         println!();
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn crc16_known_values() {
-        let buf = [0x55, 0xAA, 0x02, 0xF0];
-        let crc = crc16(&buf);
-        assert_eq!(crc, 0xEC30);
     }
 }

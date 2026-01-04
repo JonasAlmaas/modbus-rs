@@ -1,4 +1,4 @@
-use crate::coil::{self, CoilError};
+use crate::coil::{self, Error};
 use crate::def::{FunctionCode, StatusCode};
 use crate::pdu::PDUBuf;
 use crate::Instance;
@@ -51,8 +51,8 @@ pub fn read_multiple<'a>(
                         res.p[2 + (i as usize / 8)] |= 1 << (i % 8);
                     }
                 }
-                Err(CoilError::ReadNotSuppported) => (), // Leave as 0
-                Err(CoilError::ReadLocked) => return StatusCode::IllegalDataAddr,
+                Err(Error::ReadNotSuppported) => (), // Leave as 0
+                Err(Error::ReadLocked) => return StatusCode::IllegalDataAddr,
                 Err(..) => (), // Not relevant for read operations
             },
             None => (), // If coil doesn't exist, it's left as 0
