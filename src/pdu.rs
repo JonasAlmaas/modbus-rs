@@ -12,14 +12,16 @@ pub struct PDUBuf<'a> {
 
 fn handle_fn<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     match FunctionCode::try_from(buf[0]) {
-        Ok(FunctionCode::ReadCoils) => match &inst.coils {
-            Some(coils) => return func::coils::read_multiple(inst, coils, buf, res),
-            None => (),
-        },
-        Ok(FunctionCode::ReadDiscreteInputs) => match &inst.disc_inputs {
-            Some(disc_inputs) => return func::coils::read_multiple(inst, disc_inputs, buf, res),
-            None => (),
-        },
+        Ok(FunctionCode::ReadCoils) => {
+            if let Some(coils) = &inst.coils {
+                return func::coils::read_multiple(inst, coils, buf, res);
+            }
+        }
+        Ok(FunctionCode::ReadDiscreteInputs) => {
+            if let Some(disc_inputs) = inst.disc_inputs {
+                return func::coils::read_multiple(inst, disc_inputs, buf, res);
+            }
+        }
         Ok(FunctionCode::ReadHoldingRegs) => return func::regs::read_multiple(buf, res),
         Ok(FunctionCode::ReadInputRegs) => return func::regs::read_multiple(buf, res),
         Ok(FunctionCode::WriteSingleCoil) => (),
