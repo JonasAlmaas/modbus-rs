@@ -1,5 +1,3 @@
-use crate::{def::StatusCode, pdu::PDUBuf};
-
 pub mod adu;
 pub mod adu_tcp;
 pub mod coil;
@@ -7,6 +5,9 @@ pub mod crc;
 pub mod def;
 mod func;
 pub mod pdu;
+
+pub use crate::def::{FunctionCode, StatusCode};
+use crate::pdu::PDUBuf;
 
 pub struct SerialConfig {
     pub slave_addr: u8,
