@@ -41,17 +41,3 @@ pub fn crc16(buf: &[u8]) -> u16 {
         (crc >> 8) ^ LOOKUP[((crc ^ *v as u16) & 0xFF) as usize]
     })
 }
-
-#[allow(dead_code)]
-pub fn print_lookup() {
-    for row_ix in 0..32 {
-        for col_ix in 0..8 {
-            let ix = row_ix * 8 + col_ix;
-            if col_ix > 0 {
-                print!(" ");
-            }
-            print!("0x{:04X}", LOOKUP[ix]);
-        }
-        println!();
-    }
-}
