@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 pub enum ReadMethod<'a> {
     Value(bool),
     Ref(&'a bool),
@@ -30,6 +32,32 @@ impl<'a> Default for Descriptor<'a> {
             wlock: Default::default(),
             post_write: Default::default(),
         }
+    }
+}
+
+impl<'a> PartialEq for Descriptor<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.address == other.address
+    }
+}
+
+impl<'a> Eq for Descriptor<'a> {}
+
+impl<'a> PartialOrd for Descriptor<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.address.partial_cmp(&other.address)
+    }
+}
+
+impl<'a> Ord for Descriptor<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.address.cmp(&other.address)
+    }
+}
+
+impl<'a> Display for Descriptor<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{:04X}", self.address)
     }
 }
 

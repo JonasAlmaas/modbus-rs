@@ -2,11 +2,11 @@ use crate::def::{self, FunctionCode, StatusCode};
 use crate::func;
 use crate::Instance;
 
-pub(crate) const PDU_DATA_SIZE_MAX: usize = 252;
-pub const PDU_SIZE_MAX: usize = 1 + PDU_DATA_SIZE_MAX;
+const DATA_SIZE_MAX: usize = 252;
+pub const SIZE_MAX: usize = 1 + DATA_SIZE_MAX;
 
 pub struct PDUBuf<'a> {
-    pub p: &'a mut [u8; PDU_SIZE_MAX],
+    pub p: &'a mut [u8; SIZE_MAX],
     pub size: usize,
 }
 
@@ -48,7 +48,7 @@ fn handle_fn<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut PDUBuf) -> Status
     }
 }
 
-pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; PDU_SIZE_MAX]) -> usize {
+pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MAX]) -> usize {
     let fc = match buf.get(0) {
         Some(&b) => b,
         None => return 0,
@@ -69,90 +69,4 @@ pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; PDU_SIZ
     };
 
     res.size
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::coil;
-
-    #[test]
-    fn pdu_too_little_data() {
-        let inst: Instance = Default::default();
-
-        let buf = [0x04];
-        let mut res = [0; PDU_SIZE_MAX];
-        let res_len = handle_req(&inst, &buf, &mut res);
-        assert_eq!(res_len, 2);
-        assert_eq!(res[0], 0x04 | 0x80); // Error response
-        assert_eq!(res[1], 0x03); // Illegal data value
-    }
-
-    #[test]
-    fn pdu_read_coil_works() {
-        use coil::Descriptor as CoilDesc;
-
-        let coil1 = false;
-
-        let coils = &[
-            CoilDesc {
-                address: 0x00,
-                read: Some(coil::ReadMethod::Value(true)),
-                ..Default::default()
-            },
-            CoilDesc {
-                address: 0x01,
-                read: Some(coil::ReadMethod::Ref(&coil1)),
-                ..Default::default()
-            },
-            CoilDesc {
-                address: 0x02,
-                read: Some(coil::ReadMethod::Fn(|| true)),
-                ..Default::default()
-            },
-        ];
-        let inst: Instance = Instance {
-            coils: Some(coils),
-            ..Default::default()
-        };
-
-        let buf = [
-            0x01, // Fc: Read coils
-            0x00, 0x00, // Start address
-            0x00, 0x03, // Quantity
-        ];
-        let mut res = [0; PDU_SIZE_MAX];
-        let res_len = handle_req(&inst, &buf, &mut res);
-        assert_eq!(res_len, 3);
-        assert_eq!(res[0], 0x01);
-        assert_eq!(res[1], 0x01);
-        assert_eq!(res[2], 0b0101);
-    }
-
-    #[test]
-    fn pdu_write_single_coil_fn_works() {
-        use coil::Descriptor as CoilDesc;
-
-        let mut coil1 = false;
-        let mut write_coil1 = |v: bool| coil1 = v;
-
-        let coils = &[CoilDesc {
-            address: 0x00,
-            write: Some(coil::WriteMethod::Fn(&mut write_coil1)),
-            ..Default::default()
-        }];
-        let _inst: Instance = Instance {
-            coils: Some(coils),
-            ..Default::default()
-        };
-
-        // TODO
-        /*let buf = [
-            0x01, // Fc: Read coils
-            0x00, 0x00, // Start address
-            0x00, 0x03, // Quantity
-        ];
-        let mut res = [0; PDU_SIZE_MAX];
-        let res_len = handle_req(&inst, &buf, &mut res);*/
-    }
 }

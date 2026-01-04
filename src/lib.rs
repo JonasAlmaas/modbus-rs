@@ -2,7 +2,7 @@ use crate::{def::StatusCode, pdu::PDUBuf};
 
 pub mod adu;
 pub mod coil;
-mod crc;
+pub mod crc;
 pub mod def;
 mod func;
 pub mod pdu;
@@ -35,4 +35,21 @@ impl<'a> Instance<'a> {
     pub fn init(&mut self) {
         // TODO: Initialize internla state
     }
+}
+
+#[macro_export]
+macro_rules! asc {
+    ($($item:expr),+ $(,)?) => {{
+        let arr = [$($item),+];
+
+        let mut i = 0;
+        while i + 1 < arr.len() {
+            if arr[i] > arr[i + 1] {
+                panic!("asc! requires items to be sorted in ascending order");
+            }
+            i += 1;
+        }
+
+        arr
+    }};
 }

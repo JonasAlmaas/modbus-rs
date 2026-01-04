@@ -1,5 +1,5 @@
 [package]
-name = "modbus-rs"
+name = "mbrs"
 version = "0.1.0"
 edition = "2021"
 

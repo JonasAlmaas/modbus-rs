@@ -1,16 +1,20 @@
 use crate::{crc, pdu, Instance};
 
+/// The minimum size of a valid Modbus ADU buffer
+///
 /// - 1 Slave address
 /// - 1 Function code (Technically not part of the ADU, but required)
 /// - 2 crc
-const ADU_SIZE_MIN: usize = 4;
+const SIZE_MIN: usize = 4;
 
+/// The maximum size of a valid Modbus ADU buffer
+///
 /// - 1 Slave address
 /// - 253 PDU
 ///   - 1 Function code
 ///   - 252 PDU data
 /// - 2 crc
-pub const ADU_SIZE_MAX: usize = 256;
+pub const SIZE_MAX: usize = 256;
 
 pub const SLAVE_ADDR_MIN: u8 = 1;
 pub const SLAVE_ADDR_MAX: u8 = 247;
@@ -18,7 +22,7 @@ pub const SLAVE_ADDR_MAX: u8 = 247;
 const SLAVE_ADDR_BROADCAST: u8 = 0;
 const SLAVE_ADDR_DEFAULT_RESP: u8 = 248;
 
-fn prep_res(slave_addr: u8, res: &mut [u8; ADU_SIZE_MAX], pdu_size: usize) -> usize {
+fn prep_res(slave_addr: u8, res: &mut [u8; SIZE_MAX], pdu_size: usize) -> usize {
     res[0] = slave_addr;
     let res_size = 1 + pdu_size;
 
@@ -30,8 +34,8 @@ fn prep_res(slave_addr: u8, res: &mut [u8; ADU_SIZE_MAX], pdu_size: usize) -> us
     res_size + 2
 }
 
-pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; ADU_SIZE_MAX]) -> usize {
-    if !inst.serial.is_some() || buf.len() < ADU_SIZE_MIN {
+pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MAX]) -> usize {
+    if !inst.serial.is_some() || buf.len() < SIZE_MIN {
         return 0;
     }
 
@@ -53,44 +57,11 @@ pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; ADU_SIZ
     let pdu_size = pdu::handle_req(
         inst,
         &buf[1..buf.len() - 2],
-        (&mut res[1..1 + pdu::PDU_SIZE_MAX]).try_into().unwrap(),
+        (&mut res[1..1 + pdu::SIZE_MAX]).try_into().unwrap(),
     );
     if pdu_size == 0 || recv_slave_addr == SLAVE_ADDR_DEFAULT_RESP {
         return 0;
     }
 
     prep_res(recv_slave_addr, res, pdu_size)
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::SerialConfig;
-
-    #[test]
-    fn adu_works() {
-        let mut inst: Instance = Default::default();
-        inst.serial = Some(SerialConfig { slave_addr: 1 });
-
-        let mut buf = [
-            0x01, // Slave addr
-            0x03, // Read holding regs
-            0x00, 0x00, // Start addr
-            0x00, 0x01, // Quantity
-            0x00, 0x00, // CRC
-        ];
-        let crc = crc::crc16(&buf[..buf.len() - 2]);
-        let crc = crc.to_le_bytes();
-        match &mut buf {
-            [.., crc_lo, crc_hi] => {
-                *crc_lo = crc[0];
-                *crc_hi = crc[1];
-            }
-        }
-
-        let mut res = [0; ADU_SIZE_MAX];
-        let res_len = handle_req(&inst, &buf, &mut res);
-
-        assert_eq!(res_len, 7);
-    }
 }
