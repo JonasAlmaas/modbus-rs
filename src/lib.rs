@@ -1,6 +1,7 @@
 use crate::{def::StatusCode, pdu::PDUBuf};
 
 pub mod adu;
+pub mod adu_tcp;
 pub mod coil;
 pub mod crc;
 pub mod def;

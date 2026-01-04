@@ -35,10 +35,11 @@ fn prep_res(slave_addr: u8, res: &mut [u8; SIZE_MAX], pdu_size: usize) -> usize 
 }
 
 pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MAX]) -> usize {
-    if !inst.serial.is_some() || buf.len() < SIZE_MIN {
+    if !inst.serial.is_some() || buf.len() < SIZE_MIN || buf.len() > SIZE_MAX {
         return 0;
     }
 
+    // Check CRC before slave address to monitor the overall health of the bus, not just this device
     let recv_crc = u16::from_le_bytes(buf[(buf.len() - 2)..].try_into().unwrap());
     if recv_crc != crc::crc16(&buf[..buf.len() - 2]) {
         return 0;
@@ -57,9 +58,10 @@ pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MA
     let pdu_size = pdu::handle_req(
         inst,
         &buf[1..buf.len() - 2],
-        (&mut res[1..1 + pdu::SIZE_MAX]).try_into().unwrap(),
+        (&mut res[1..(1 + pdu::SIZE_MAX)]).try_into().unwrap(),
     );
-    if pdu_size == 0 || recv_slave_addr == SLAVE_ADDR_DEFAULT_RESP {
+
+    if pdu_size == 0 || recv_slave_addr == SLAVE_ADDR_BROADCAST {
         return 0;
     }
 
