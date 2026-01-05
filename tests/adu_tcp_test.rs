@@ -4,25 +4,25 @@ mod test {
 
     #[test]
     fn adu_tcp_works() {
-        use mbrs::coil;
         use mbrs::coil::Descriptor as CoilDesc;
+        use mbrs::coil::ReadMethod as CoilReadMethod;
 
         let coil1 = false;
 
         let coils = &mbrs::asc![
             CoilDesc {
                 address: 0x00,
-                read: Some(coil::ReadMethod::Value(true)),
+                read: Some(CoilReadMethod::Value(true)),
                 ..Default::default()
             },
             CoilDesc {
                 address: 0x01,
-                read: Some(coil::ReadMethod::Ref(&coil1)),
+                read: Some(CoilReadMethod::Ref(&coil1)),
                 ..Default::default()
             },
             CoilDesc {
                 address: 0x02,
-                read: Some(coil::ReadMethod::Fn(|| true)),
+                read: Some(CoilReadMethod::Fn(Box::new(|| true))),
                 ..Default::default()
             },
         ];

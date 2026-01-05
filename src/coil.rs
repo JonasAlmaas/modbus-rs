@@ -11,12 +11,12 @@ pub enum Error {
 pub enum ReadMethod<'a> {
     Value(bool),
     Ref(&'a bool),
-    Fn(fn() -> bool),
+    Fn(Box<dyn Fn() -> bool + 'a>),
 }
 
 pub enum WriteMethod<'a> {
     Ref(&'a mut bool),
-    Fn(&'a mut dyn FnMut(bool)),
+    Fn(Box<dyn FnMut(bool) + 'a>),
 }
 
 pub struct Descriptor<'a> {
@@ -115,11 +115,7 @@ impl<'a> Descriptor<'a> {
         match &mut self.write {
             Some(method) => {
                 match method {
-                    WriteMethod::Ref(_r) => {
-                        //let r = *r;
-                        //*r = value;
-                        //*r = value;
-                    }
+                    WriteMethod::Ref(ref mut r) => **r = value,
                     WriteMethod::Fn(f) => f(value),
                 };
 

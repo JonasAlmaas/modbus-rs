@@ -14,25 +14,26 @@ mod test {
 
     #[test]
     fn pdu_read_coil_works() {
-        use mbrs::coil;
         use mbrs::coil::Descriptor as CoilDesc;
+        use mbrs::coil::ReadMethod as CoilReadMethod;
 
         let coil1 = false;
+        let coil2 = true;
 
         let coils = &mbrs::asc![
             CoilDesc {
                 address: 0x00,
-                read: Some(coil::ReadMethod::Value(true)),
+                read: Some(CoilReadMethod::Value(true)),
                 ..Default::default()
             },
             CoilDesc {
                 address: 0x01,
-                read: Some(coil::ReadMethod::Ref(&coil1)),
+                read: Some(CoilReadMethod::Ref(&coil1)),
                 ..Default::default()
             },
             CoilDesc {
                 address: 0x02,
-                read: Some(coil::ReadMethod::Fn(|| true)),
+                read: Some(CoilReadMethod::Fn(Box::new(|| coil2))),
                 ..Default::default()
             },
         ];
@@ -56,15 +57,14 @@ mod test {
 
     #[test]
     fn pdu_write_single_coil_fn_works() {
-        use mbrs::coil;
         use mbrs::coil::Descriptor as CoilDesc;
+        use mbrs::coil::WriteMethod as CoilWriteMethod;
 
         let mut coil1 = false;
-        let mut write_coil1 = |v: bool| coil1 = v;
 
         let coils = &mbrs::asc![CoilDesc {
             address: 0x00,
-            write: Some(coil::WriteMethod::Fn(&mut write_coil1)),
+            write: Some(CoilWriteMethod::Fn(Box::new(|v| coil1 = v))),
             ..Default::default()
         }];
         let _inst = mbrs::Instance {

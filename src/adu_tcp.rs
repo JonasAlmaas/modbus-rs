@@ -41,9 +41,7 @@ pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MA
     let pdu_size = pdu::handle_req(
         inst,
         &buf[MBAP_SIZE..(MBAP_SIZE + length - 1)],
-        (&mut res[MBAP_SIZE..(MBAP_SIZE + pdu::SIZE_MAX)])
-            .try_into()
-            .unwrap(),
+        (&mut res[MBAP_SIZE..]).try_into().unwrap(),
     );
 
     if pdu_size == 0 {
