@@ -17,7 +17,9 @@ pub struct Instance<'a> {
     pub disc_inputs: Option<&'a [coil::Descriptor<'a>]>,
     pub coils: Option<&'a [coil::Descriptor<'a>]>,
 
-    pub handle_fn: Option<fn(inst: &Instance, buf: &[u8], res: &mut PDUBuf) -> StatusCode>,
+    pub handle_fn: Option<Box<dyn FnMut(&Instance, &[u8], &mut PDUBuf) -> StatusCode + 'a>>,
+
+    pub commit_coil_write: Option<Box<dyn FnMut() + 'a>>,
 
     pub serial: Option<SerialConfig>,
 }
@@ -28,6 +30,7 @@ impl<'a> Default for Instance<'a> {
             disc_inputs: Default::default(),
             coils: Default::default(),
             handle_fn: Default::default(),
+            commit_coil_write: Default::default(),
             serial: Default::default(),
         }
     }

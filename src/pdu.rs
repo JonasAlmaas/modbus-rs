@@ -12,27 +12,33 @@ pub struct PDUBuf<'a> {
 
 fn handle_fn<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut PDUBuf) -> StatusCode {
     match FunctionCode::try_from(buf[0]) {
-        Ok(FunctionCode::ReadCoils) => {
-            if let Some(coils) = &inst.coils {
-                return func::coils::read_multiple(inst, coils, buf, res);
-            }
-        }
+        Ok(FunctionCode::ReadCoils) => match func::coils::read_multiple(inst, buf, res, false) {
+            Ok(status_code) => return status_code,
+            Err(()) => (),
+        },
         Ok(FunctionCode::ReadDiscreteInputs) => {
-            if let Some(disc_inputs) = inst.disc_inputs {
-                return func::coils::read_multiple(inst, disc_inputs, buf, res);
+            match func::coils::read_multiple(inst, buf, res, true) {
+                Ok(status_code) => return status_code,
+                Err(()) => (),
             }
         }
         Ok(FunctionCode::ReadHoldingRegs) => return func::regs::read_multiple(buf, res),
         Ok(FunctionCode::ReadInputRegs) => return func::regs::read_multiple(buf, res),
-        Ok(FunctionCode::WriteSingleCoil) => (),
+        Ok(FunctionCode::WriteSingleCoil) => match func::coils::write_single(inst, buf, res) {
+            Ok(status_code) => return status_code,
+            Err(()) => (),
+        },
         Ok(FunctionCode::WriteSingleReg) => (),
         Ok(FunctionCode::ReadExceptionStatus) => (),
         Ok(FunctionCode::Diagnostics) => (),
         Ok(FunctionCode::CommEventCounter) => (),
         Ok(FunctionCode::CommEventLog) => (),
-        Ok(FunctionCode::WriteMultipleCoils) => (),
+        Ok(FunctionCode::WriteMultipleCoils) => match func::coils::write_multiple(inst, buf, res) {
+            Ok(status_code) => return status_code,
+            Err(()) => (),
+        },
         Ok(FunctionCode::WriteMultipleRegs) => (),
-        Ok(FunctionCode::ReportSlaveId) => (),
+        Ok(FunctionCode::ReportSlaveId) => (), // Should be implemented through Instance::handle_fn
         Ok(FunctionCode::ReadFileRecord) => (),
         Ok(FunctionCode::WriteFileRecord) => (),
         Ok(FunctionCode::MaskWriteReg) => (),
@@ -43,11 +49,13 @@ fn handle_fn<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut PDUBuf) -> Status
 
     // If the library was not able to handle this request,
     // call the user defined hanlder function if present.
-    if let Some(f) = inst.handle_fn {
+    /*if let Some(f) = &inst.handle_fn {
         f(inst, buf, res)
     } else {
         StatusCode::IllegalFc
-    }
+    }*/
+
+    StatusCode::IllegalFc
 }
 
 pub fn handle_req<'a>(inst: &'a Instance<'a>, buf: &[u8], res: &mut [u8; SIZE_MAX]) -> usize {

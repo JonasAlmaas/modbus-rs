@@ -24,10 +24,10 @@ pub struct Descriptor<'a> {
     pub read: Option<ReadMethod<'a>>,
     pub write: Option<WriteMethod<'a>>,
 
-    pub rlock: Option<fn() -> bool>,
-    pub wlock: Option<fn() -> bool>,
+    pub rlock: Option<Box<dyn Fn() -> bool + 'a>>,
+    pub wlock: Option<Box<dyn Fn() -> bool + 'a>>,
 
-    pub post_write: Option<fn() -> ()>,
+    pub post_write: Option<Box<dyn FnMut() + 'a>>,
 }
 
 impl<'a> Default for Descriptor<'a> {
@@ -79,17 +79,31 @@ pub fn find<'a>(address: u16, coils: &'a [Descriptor<'a>]) -> Option<&'a Descrip
     }
 }
 
+/// Finds a coild by it's address and get a mutable reference to it
+///
+/// This uses binary search, so all coils must be sorted in ascending order by address
+pub fn find_mut<'a, 'b>(
+    address: u16,
+    coils: &'a mut [Descriptor<'b>],
+) -> Option<&'a mut Descriptor<'b>> {
+    match coils.binary_search_by(|coil| coil.address.cmp(&address)) {
+        Ok(ix) => Some(&mut coils[ix]),
+        Err(..) => None,
+    }
+}
+
 impl<'a> Descriptor<'a> {
-    pub fn read(&self) -> Result<bool, Error> {
-        // Check read permissions
+    pub fn read_allowed(&self) -> bool {
         match &self.rlock {
-            Some(rlock) => {
-                if rlock() {
-                    return Err(Error::ReadLocked);
-                }
-            }
-            None => (),
-        };
+            Some(rlock) => rlock(),
+            None => true,
+        }
+    }
+
+    pub fn read(&self) -> Result<bool, Error> {
+        if !self.read_allowed() {
+            return Err(Error::ReadLocked);
+        }
 
         match &self.read {
             Some(method) => match method {
@@ -101,27 +115,30 @@ impl<'a> Descriptor<'a> {
         }
     }
 
-    pub fn write(&mut self, value: bool) -> Result<(), Error> {
-        // Check read permissions
+    pub fn write_allowed(&self) -> bool {
         match &self.wlock {
-            Some(wlock) => {
-                if wlock() {
-                    return Err(Error::WriteLocked);
-                }
-            }
-            None => (),
-        };
+            Some(wlock) => !wlock(),
+            None => true,
+        }
+    }
 
-        match &mut self.write {
+    pub fn write(&self, _value: bool) -> Result<(), Error> {
+        if !self.write_allowed() {
+            return Err(Error::WriteLocked);
+        }
+
+        match &self.write {
             Some(method) => {
                 match method {
-                    WriteMethod::Ref(ref mut r) => **r = value,
-                    WriteMethod::Fn(f) => f(value),
+                    //WriteMethod::Ref(ref mut r) => **r = value,
+                    //WriteMethod::Fn(f) => f(value),
+                    WriteMethod::Ref(_r) => (),
+                    WriteMethod::Fn(_f) => (),
                 };
 
-                if let Some(cb) = self.post_write {
+                /*if let Some(ref mut cb) = self.post_write {
                     cb();
-                }
+                }*/
 
                 Ok(())
             }
